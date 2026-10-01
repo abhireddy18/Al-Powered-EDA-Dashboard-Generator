@@ -1,5 +1,7 @@
 # AI-Powered EDA & Dashboard Generator
 
+GitHub repository: `Al-Powered-EDA-Dashboard-Generator`
+
 An intelligent exploratory data analysis tool that uses **Google Gemini** to decide _what_ to analyse, while computing every number from the real data in Python — **zero hallucinated numbers**.
 
 ---
