@@ -2,14 +2,14 @@
 app.py – Streamlit UI & orchestration for the AI-Powered EDA Dashboard Generator.
 
 State management:
-  All intermediate results (dataframe, profile, plan, KPIs, charts, generated
-  code/image) are stored in ``st.session_state`` so that button clicks for
-  code generation and image generation do NOT re-run the analysis pipeline.
-  Uploading a new file resets all downstream state automatically.
+    All intermediate results (dataframe, profile, plan, KPIs, charts, generated
+    code) are stored in ``st.session_state`` so that code generation does NOT
+    re-run the analysis pipeline.
+    Uploading a new file resets all downstream state automatically.
 
 Enhancements (v2):
-  - Multi-step progress bar during analysis
-  - Tabbed layout for results (KPIs / Charts / Insights / Code / Image)
+    - Multi-step progress bar during analysis
+    - Tabbed layout for results (KPIs / Charts / Insights / Code / Dashboard)
   - Data filtering sidebar with dynamic widgets
   - KPI delta indicators with coloured arrows
   - Chart description captions
@@ -40,7 +40,6 @@ logger = logging.getLogger(__name__)
 
 # ── Local imports (must come after logging setup) ────────────────────────────
 from config import GEMINI_API_KEY, GEMINI_IMAGE_MODEL, GEMINI_TEXT_MODEL
-from utils.dashboard_mockup import build_dashboard_mockup_svg
 from utils.data_loader import build_data_profile, load_data
 from utils.eda_engine import build_charts, compute_kpis, sanitize_plan
 from utils.filters import render_filters
@@ -48,9 +47,7 @@ from utils.gemini_client import GeminiClient
 
 # ── Output directories ──────────────────────────────────────────────────────
 CODE_DIR = Path("outputs/generated_code")
-IMAGE_DIR = Path("outputs/generated_images")
 CODE_DIR.mkdir(parents=True, exist_ok=True)
-IMAGE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ── Gemini client ───────────────────────────────────────────────────────────
@@ -74,7 +71,7 @@ def _get_gemini_client() -> GeminiClient:
 
 _DOWNSTREAM_KEYS = [
     "df", "profile", "plan", "kpi_results", "chart_figures",
-    "generated_code", "generated_image", "filename", "analysis_cache",
+    "generated_code", "filename", "analysis_cache",
 ]
 
 
@@ -468,8 +465,8 @@ if "kpi_results" in st.session_state:
     chart_figures = st.session_state.get("chart_figures", [])
 
     # ── Tabbed layout ────────────────────────────────────────────────────
-    tab_kpis, tab_charts, tab_insights, tab_code, tab_image = st.tabs(
-        ["📌 KPIs", "📊 Charts", "💡 Insights", "🧑‍💻 Code", "🖼️ Image"]
+    tab_kpis, tab_charts, tab_insights, tab_code, tab_dashboard = st.tabs(
+        ["📌 KPIs", "📊 Charts", "💡 Insights", "🧑‍💻 Code", "📈 Dashboard"]
     )
 
     # ══════════════════════════════════════════════════════════════════════
@@ -596,82 +593,46 @@ if "kpi_results" in st.session_state:
             )
 
     # ══════════════════════════════════════════════════════════════════════
-    # TAB 5: Dashboard Image
+    # TAB 5: Interactive Dashboard
     # ══════════════════════════════════════════════════════════════════════
-    with tab_image:
-        st.markdown('<div class="section-header">🖼️ Dashboard Mockup Generator</div>', unsafe_allow_html=True)
-        st.caption("No Gemini image tokens are used by default. This creates a stylised dashboard concept locally so you can preview the look without paid image billing.")
-        st.caption("Generate a stylised dashboard mockup concept that feels like a polished product dashboard, not a literal chart re-render.")
+    with tab_dashboard:
+        st.subheader("Analysis dashboard")
+        dataset = st.session_state.get("df")
+        if dataset is not None:
+            filename = st.session_state.get("filename", "Uploaded dataset")
+            st.caption(f"{filename} · {len(dataset):,} rows · {len(dataset.columns):,} columns")
 
-        use_paid_image = bool(GEMINI_IMAGE_MODEL) and st.checkbox(
-            "Use paid Gemini image generation instead (billed separately)",
-            value=False,
-            help="Optional. This consumes Gemini image credits. Leave unchecked for the free local mockup.",
-        )
-
-        generate_image_clicked = st.button(
-            "🎨 Generate Dashboard Concept",
-            use_container_width=True,
-            help="Create a no-cost dashboard concept mockup without using Gemini image tokens.",
-            key="btn_generate_image",
-        )
-
-        if generate_image_clicked:
-            if use_paid_image:
-                gemini = _get_gemini_client()
-                with st.spinner("🖼️ Generating paid Gemini dashboard mockup…"):
-                    try:
-                        image_bytes = gemini.generate_dashboard_image(
-                            kpi_results,
-                            plan.get("insights", []),
-                        )
-                        st.session_state["generated_image"] = image_bytes
-
-                        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        save_path = IMAGE_DIR / f"dashboard_{ts}.png"
-                        save_path.write_bytes(image_bytes)
-                        logger.info("Dashboard image saved to %s", save_path)
-                    except Exception as exc:
-                        st.error(f"⚠️ Image generation failed: {exc}")
-                        logger.error("Image gen error:\n%s", traceback.format_exc())
-            else:
-                with st.spinner("🖼️ Building dashboard mockup concept…"):
-                    try:
-                        mockup_svg = build_dashboard_mockup_svg(kpi_results, plan.get("insights", []))
-                        st.session_state["generated_image"] = mockup_svg
-
-                        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        save_path = IMAGE_DIR / f"dashboard_{ts}.svg"
-                        save_path.write_text(mockup_svg, encoding="utf-8")
-                        logger.info("Dashboard concept saved to %s", save_path)
-                    except Exception as exc:
-                        st.error(f"⚠️ Dashboard concept generation failed: {exc}")
-                        logger.error("Mockup gen error:\n%s", traceback.format_exc())
-
-        if "generated_image" in st.session_state:
-            generated_image = st.session_state["generated_image"]
-            if isinstance(generated_image, str):
-                st.caption(
-                    "✅ _This is a local design concept — no Gemini image tokens were used. It captures the look and feel of a polished dashboard without re-rendering the charts literally._"
+        with st.container(horizontal=True):
+            for kpi in kpi_results:
+                delta = kpi.get("delta")
+                delta_display = f"{delta:+.1f}%" if delta is not None else None
+                st.metric(
+                    label=kpi.get("name", "Metric"),
+                    value=kpi.get("formatted", "—"),
+                    delta=delta_display,
+                    border=True,
                 )
-                st.markdown(generated_image, unsafe_allow_html=True)
-                st.download_button(
-                    "⬇️ Download Dashboard Concept",
-                    data=generated_image,
-                    file_name="dashboard_mockup.svg",
-                    mime="image/svg+xml",
-                    key="dl_image",
-                )
-            else:
-                st.caption(
-                    "⚠️ _This is a Gemini-generated **visual mockup** — not a literal "
-                    "re-render of the charts above. It illustrates a possible dashboard style._"
-                )
-                st.image(generated_image, use_container_width=True)
-                st.download_button(
-                    "⬇️ Download Dashboard Image",
-                    data=generated_image,
-                    file_name="dashboard_mockup.png",
-                    mime="image/png",
-                    key="dl_image_paid",
-                )
+
+        if chart_figures:
+            st.subheader("Charts")
+            for index in range(0, len(chart_figures), 2):
+                chart_cols = st.columns(min(2, len(chart_figures) - index))
+                for offset, chart_col in enumerate(chart_cols):
+                    fig, description = chart_figures[index + offset]
+                    with chart_col:
+                        with st.container(border=True):
+                            st.plotly_chart(
+                                fig,
+                                width="stretch",
+                                key=f"dashboard_chart_{index + offset}",
+                            )
+                            if description:
+                                st.caption(description)
+
+        insights = plan.get("insights", [])
+        if insights:
+            st.subheader("Key insights")
+            with st.container(horizontal=True):
+                for insight in insights:
+                    with st.container(border=True):
+                        st.write(insight)
