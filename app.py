@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 
 # ── Local imports (must come after logging setup) ────────────────────────────
 from config import GEMINI_API_KEY, GEMINI_IMAGE_MODEL, GEMINI_TEXT_MODEL
+from utils.dashboard_mockup import build_dashboard_mockup_svg
 from utils.data_loader import build_data_profile, load_data
 from utils.eda_engine import build_charts, compute_kpis, sanitize_plan
 from utils.filters import render_filters
@@ -599,48 +600,78 @@ if "kpi_results" in st.session_state:
     # ══════════════════════════════════════════════════════════════════════
     with tab_image:
         st.markdown('<div class="section-header">🖼️ Dashboard Mockup Generator</div>', unsafe_allow_html=True)
-        st.caption("Gemini API image generation is billed separately from Google AI Plus; a 1K image currently costs about $0.034.")
-        st.caption("Generate a stylised dashboard mockup image (visual concept, not a literal chart re-render).")
+        st.caption("No Gemini image tokens are used by default. This creates a stylised dashboard concept locally so you can preview the look without paid image billing.")
+        st.caption("Generate a stylised dashboard mockup concept that feels like a polished product dashboard, not a literal chart re-render.")
+
+        use_paid_image = bool(GEMINI_IMAGE_MODEL) and st.checkbox(
+            "Use paid Gemini image generation instead (billed separately)",
+            value=False,
+            help="Optional. This consumes Gemini image credits. Leave unchecked for the free local mockup.",
+        )
 
         generate_image_clicked = st.button(
-            "🎨 Generate Dashboard Image",
+            "🎨 Generate Dashboard Concept",
             use_container_width=True,
-            help="Generate a stylised dashboard mockup image.",
+            help="Create a no-cost dashboard concept mockup without using Gemini image tokens.",
             key="btn_generate_image",
-            disabled=not GEMINI_IMAGE_MODEL,
         )
 
         if generate_image_clicked:
-            gemini = _get_gemini_client()
-            with st.spinner("🖼️ Generating dashboard mockup image…"):
-                try:
-                    image_bytes = gemini.generate_dashboard_image(
-                        kpi_results,
-                        plan.get("insights", []),
-                    )
-                    st.session_state["generated_image"] = image_bytes
+            if use_paid_image:
+                gemini = _get_gemini_client()
+                with st.spinner("🖼️ Generating paid Gemini dashboard mockup…"):
+                    try:
+                        image_bytes = gemini.generate_dashboard_image(
+                            kpi_results,
+                            plan.get("insights", []),
+                        )
+                        st.session_state["generated_image"] = image_bytes
 
-                    # Save a timestamped copy
-                    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    save_path = IMAGE_DIR / f"dashboard_{ts}.png"
-                    save_path.write_bytes(image_bytes)
-                    logger.info("Dashboard image saved to %s", save_path)
+                        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        save_path = IMAGE_DIR / f"dashboard_{ts}.png"
+                        save_path.write_bytes(image_bytes)
+                        logger.info("Dashboard image saved to %s", save_path)
+                    except Exception as exc:
+                        st.error(f"⚠️ Image generation failed: {exc}")
+                        logger.error("Image gen error:\n%s", traceback.format_exc())
+            else:
+                with st.spinner("🖼️ Building dashboard mockup concept…"):
+                    try:
+                        mockup_svg = build_dashboard_mockup_svg(kpi_results, plan.get("insights", []))
+                        st.session_state["generated_image"] = mockup_svg
 
-                except Exception as exc:
-                    st.error(f"⚠️ Image generation failed: {exc}")
-                    logger.error("Image gen error:\n%s", traceback.format_exc())
+                        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        save_path = IMAGE_DIR / f"dashboard_{ts}.svg"
+                        save_path.write_text(mockup_svg, encoding="utf-8")
+                        logger.info("Dashboard concept saved to %s", save_path)
+                    except Exception as exc:
+                        st.error(f"⚠️ Dashboard concept generation failed: {exc}")
+                        logger.error("Mockup gen error:\n%s", traceback.format_exc())
 
         if "generated_image" in st.session_state:
-            image_bytes = st.session_state["generated_image"]
-            st.caption(
-                "⚠️ _This is an AI-generated **visual mockup** — not a literal "
-                "re-render of the charts above. It illustrates a possible dashboard style._"
-            )
-            st.image(image_bytes, use_container_width=True)
-            st.download_button(
-                "⬇️ Download Dashboard Image",
-                data=image_bytes,
-                file_name="dashboard_mockup.png",
-                mime="image/png",
-                key="dl_image",
-            )
+            generated_image = st.session_state["generated_image"]
+            if isinstance(generated_image, str):
+                st.caption(
+                    "✅ _This is a local design concept — no Gemini image tokens were used. It captures the look and feel of a polished dashboard without re-rendering the charts literally._"
+                )
+                st.markdown(generated_image, unsafe_allow_html=True)
+                st.download_button(
+                    "⬇️ Download Dashboard Concept",
+                    data=generated_image,
+                    file_name="dashboard_mockup.svg",
+                    mime="image/svg+xml",
+                    key="dl_image",
+                )
+            else:
+                st.caption(
+                    "⚠️ _This is a Gemini-generated **visual mockup** — not a literal "
+                    "re-render of the charts above. It illustrates a possible dashboard style._"
+                )
+                st.image(generated_image, use_container_width=True)
+                st.download_button(
+                    "⬇️ Download Dashboard Image",
+                    data=generated_image,
+                    file_name="dashboard_mockup.png",
+                    mime="image/png",
+                    key="dl_image_paid",
+                )
