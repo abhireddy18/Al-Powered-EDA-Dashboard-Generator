@@ -17,17 +17,17 @@ def build_dashboard_mockup_svg(kpi_results: list[dict], insights: list[str]) -> 
         label = _escape_svg_text(item.get("label") or item.get("metric") or f"Metric {index + 1}")
         value = _escape_svg_text(item.get("value") or item.get("metric_value") or "—")
         delta = _escape_svg_text(item.get("delta") or item.get("change") or "")
-        x = 28 + (index % 2) * 300
-        y = 106 + (index // 2) * 140
+        x = 240 + (index % 2) * 180
+        y = 110 + (index // 2) * 110
         color = palette[index % len(palette)]
         metrics.append(
             f'''
             <g transform="translate({x},{y})">
-              <rect width="250" height="108" rx="18" fill="#141a2b" stroke="rgba(255,255,255,0.08)"/>
-              <rect x="14" y="16" width="48" height="48" rx="12" fill="{color}" opacity="0.22"/>
-              <text x="20" y="38" font-size="18" fill="#d6def7" font-weight="600">{label}</text>
-              <text x="20" y="70" font-size="26" fill="#f7f9ff" font-weight="700">{value}</text>
-              <text x="20" y="92" font-size="12" fill="{color}" font-weight="600">{delta}</text>
+              <rect width="160" height="94" rx="18" fill="#121e33" stroke="rgba(255,255,255,0.07)"/>
+              <rect x="14" y="16" width="38" height="38" rx="12" fill="{color}" opacity="0.2"/>
+              <text x="18" y="36" font-size="12" fill="#dfe7ff" font-weight="600">{label}</text>
+              <text x="18" y="66" font-size="22" fill="#f7f9ff" font-weight="700">{value}</text>
+              <text x="18" y="82" font-size="11" fill="{color}" font-weight="600">{delta}</text>
             </g>
             '''
         )
@@ -61,41 +61,65 @@ def build_dashboard_mockup_svg(kpi_results: list[dict], insights: list[str]) -> 
     )
 
     return f'''
-    <svg xmlns="http://www.w3.org/2000/svg" width="960" height="720" viewBox="0 0 960 720" role="img" aria-label="Dashboard concept mockup" class="dashboard-mockup">
+    <svg xmlns="http://www.w3.org/2000/svg" width="960" height="720" viewBox="0 0 960 720" role="img" aria-label="Webpage dashboard mockup" class="dashboard-mockup">
       <defs>
         <linearGradient id="bg" x1="0" x2="1">
-          <stop offset="0%" stop-color="#0b1020"/>
-          <stop offset="100%" stop-color="#141d35"/>
+          <stop offset="0%" stop-color="#101827"/>
+          <stop offset="100%" stop-color="#0d1527"/>
         </linearGradient>
         <linearGradient id="panel" x1="0" x2="1">
-          <stop offset="0%" stop-color="#17213b"/>
-          <stop offset="100%" stop-color="#10182d"/>
+          <stop offset="0%" stop-color="#16233a"/>
+          <stop offset="100%" stop-color="#101b2d"/>
+        </linearGradient>
+        <linearGradient id="soft" x1="0" x2="1">
+          <stop offset="0%" stop-color="#1a2a46"/>
+          <stop offset="100%" stop-color="#121d34"/>
         </linearGradient>
       </defs>
+
       <rect width="960" height="720" fill="url(#bg)"/>
-      <rect x="24" y="24" width="912" height="672" rx="28" fill="url(#panel)" stroke="rgba(255,255,255,0.08)"/>
-      <rect x="56" y="54" width="160" height="38" rx="12" fill="#202b48"/>
-      <text x="82" y="80" font-size="20" fill="#7dd3fc" font-weight="700">ApexFlow</text>
-      <text x="257" y="80" font-size="14" fill="#98a7d9">Overview</text>
-      <text x="600" y="80" font-size="14" fill="#98a7d9">Revenue</text>
-      <text x="760" y="80" font-size="14" fill="#98a7d9">Insights</text>
-      <text x="820" y="80" font-size="14" fill="#98a7d9">Export</text>
-      <text x="36" y="118" font-size="26" fill="#f5f7ff" font-weight="700">Executive dashboard</text>
-      <text x="36" y="146" font-size="14" fill="#98a7d9">Design concept • no image tokens used</text>
+      <rect x="24" y="20" width="912" height="680" rx="26" fill="#101828" stroke="rgba(255,255,255,0.08)"/>
+
+      <rect x="40" y="36" width="880" height="44" rx="14" fill="#1a2335"/>
+      <circle cx="66" cy="58" r="6" fill="#ff5f57"/>
+      <circle cx="84" cy="58" r="6" fill="#febc2e"/>
+      <circle cx="102" cy="58" r="6" fill="#28c840"/>
+      <rect x="128" y="48" width="330" height="20" rx="10" fill="#0e1729"/>
+      <text x="610" y="62" font-size="12" fill="#9fb0d8">analytics.executive-portal.ai</text>
+
+      <rect x="40" y="96" width="160" height="576" rx="18" fill="url(#soft)"/>
+      <text x="70" y="130" font-size="24" font-weight="700" fill="#f5f7ff">PulseBoard</text>
+      <rect x="62" y="162" width="116" height="32" rx="10" fill="#243358"/>
+      <text x="88" y="183" font-size="12" fill="#dce7ff">Overview</text>
+      <rect x="62" y="208" width="116" height="32" rx="10" fill="#101b2d"/>
+      <text x="87" y="229" font-size="12" fill="#8ea1d2">Revenue</text>
+      <rect x="62" y="254" width="116" height="32" rx="10" fill="#101b2d"/>
+      <text x="83" y="275" font-size="12" fill="#8ea1d2">Customers</text>
+      <rect x="62" y="300" width="116" height="32" rx="10" fill="#101b2d"/>
+      <text x="87" y="321" font-size="12" fill="#8ea1d2">Forecast</text>
+
+      <rect x="220" y="104" width="666" height="112" rx="18" fill="#121d32" stroke="rgba(255,255,255,0.06)"/>
+      <text x="246" y="138" font-size="28" fill="#f5f7ff" font-weight="700">Executive BI portal</text>
+      <text x="246" y="164" font-size="14" fill="#9fb0d8">Premium SaaS dashboard preview • no image tokens used</text>
+      <rect x="700" y="120" width="150" height="32" rx="10" fill="#243358"/>
+      <text x="734" y="141" font-size="12" fill="#77d7ff">Live metrics</text>
+
       {''.join(metrics)}
-      <rect x="626" y="110" width="264" height="240" rx="18" fill="#111b2d" stroke="rgba(255,255,255,0.08)"/>
-      <text x="650" y="142" font-size="14" fill="#98a7d9">Performance</text>
-      <path d="M 650 300 C 690 240, 720 250, 760 220 S 830 160, 860 120" fill="none" stroke="#7dd3fc" stroke-width="4" stroke-linecap="round"/>
-      <circle cx="760" cy="220" r="6" fill="#7dd3fc"/>
-      <circle cx="860" cy="120" r="6" fill="#6ee7b7"/>
-      <text x="650" y="330" font-size="12" fill="#98a7d9">Q1</text>
-      <text x="760" y="330" font-size="12" fill="#98a7d9">Q2</text>
-      <text x="850" y="330" font-size="12" fill="#98a7d9">Q3</text>
-      <rect x="34" y="360" width="570" height="210" rx="18" fill="#111b2d" stroke="rgba(255,255,255,0.08)"/>
-      <text x="56" y="392" font-size="14" fill="#98a7d9">Trend</text>
+
+      <rect x="230" y="250" width="392" height="220" rx="18" fill="#111b2d" stroke="rgba(255,255,255,0.06)"/>
+      <text x="252" y="280" font-size="12" fill="#9fb0d8">Trend</text>
       {''.join(mini_bars)}
-      <rect x="610" y="380" width="290" height="190" rx="18" fill="#111b2d" stroke="rgba(255,255,255,0.08)"/>
-      <text x="634" y="412" font-size="14" fill="#98a7d9">Highlights</text>
+      <rect x="642" y="250" width="224" height="220" rx="18" fill="#111b2d" stroke="rgba(255,255,255,0.06)"/>
+      <text x="664" y="280" font-size="12" fill="#9fb0d8">Performance</text>
+      <path d="M 664 402 C 694 370, 734 382, 770 344 S 840 286, 846 258" fill="none" stroke="#7dd3fc" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="770" cy="344" r="6" fill="#7dd3fc"/>
+      <circle cx="846" cy="258" r="6" fill="#6ee7b7"/>
+      <text x="670" y="428" font-size="11" fill="#9fb0d8">Jan</text>
+      <text x="760" y="428" font-size="11" fill="#9fb0d8">Feb</text>
+      <text x="825" y="428" font-size="11" fill="#9fb0d8">Mar</text>
+
+      <rect x="230" y="500" width="636" height="136" rx="18" fill="#111b2d" stroke="rgba(255,255,255,0.06)"/>
+      <text x="252" y="530" font-size="12" fill="#9fb0d8">Highlights</text>
       {''.join(insight_items)}
       {summary_html}
     </svg>
