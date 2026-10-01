@@ -32,7 +32,7 @@ class GeminiClient:
         self,
         api_key: str,
         text_model: str,
-        image_model: str,
+        image_model: str | None,
         max_retries: int = 3,
     ):
         self._client = genai.Client(api_key=api_key)
@@ -139,6 +139,8 @@ class GeminiClient:
         kpi_results: list[dict[str, Any]],
         insights: list[str],
     ) -> bytes:
+        if not self._image_model:
+            raise RuntimeError("Dashboard image generation requires an explicitly configured image model.")
         user_message = build_dashboard_image_user_message(kpi_results, insights)
         response = self._call_with_retry(
             lambda: self._client.models.generate_content(

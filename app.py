@@ -599,6 +599,7 @@ if "kpi_results" in st.session_state:
     # ══════════════════════════════════════════════════════════════════════
     with tab_image:
         st.markdown('<div class="section-header">🖼️ Dashboard Mockup Generator</div>', unsafe_allow_html=True)
+        st.caption("Gemini API image generation is billed separately from Google AI Plus; a 1K image currently costs about $0.034.")
         st.caption("Generate a stylised dashboard mockup image (visual concept, not a literal chart re-render).")
 
         generate_image_clicked = st.button(
@@ -606,6 +607,7 @@ if "kpi_results" in st.session_state:
             use_container_width=True,
             help="Generate a stylised dashboard mockup image.",
             key="btn_generate_image",
+            disabled=not GEMINI_IMAGE_MODEL,
         )
 
         if generate_image_clicked:
